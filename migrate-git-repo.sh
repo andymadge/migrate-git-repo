@@ -6,6 +6,10 @@ set -euo pipefail
 #
 # For automated GitHub repo creation, install gh CLI: brew install gh (or see https://github.com/cli/cli#installation) then run gh auth login
 
+# ==============================================================================
+# Helpers
+# ==============================================================================
+
 usage() {
   local script_name
   script_name=$(basename "$0")
@@ -61,6 +65,10 @@ section() {
   echo "==> $1"
 }
 
+# ==============================================================================
+# Argument parsing
+# ==============================================================================
+
 parse_args() {
   if [ $# -lt 1 ]; then
     usage
@@ -68,16 +76,18 @@ parse_args() {
 
   POSITIONAL=()
   CLEANUP=false
+  # GitHub-specific flags
   CREATE_GITHUB_REPO=false
   VISIBILITY="--private"
   USE_HTTPS=false
 
   for arg in "$@"; do
     case "$arg" in
+      --cleanup)            CLEANUP=true ;;
+      # GitHub-specific flags
       --create-github-repo) CREATE_GITHUB_REPO=true ;;
       --create-public)      VISIBILITY="--public" ;;
       --https)              USE_HTTPS=true ;;
-      --cleanup)            CLEANUP=true ;;
       --*) echo "Unknown option: $arg"; usage ;;
       *)   POSITIONAL+=("$arg") ;;
     esac
@@ -98,6 +108,7 @@ validate_args() {
     exit 1
   fi
 
+  # GitHub-specific flag validation
   if [ "$USE_HTTPS" = true ] && [ "$CREATE_GITHUB_REPO" = false ]; then
     echo "Error: --https is only applicable when --create-github-repo is used without a destination URL."
     exit 1
@@ -108,6 +119,17 @@ validate_args() {
     exit 1
   fi
 }
+
+# ==============================================================================
+# Provider: GitHub (gh CLI)
+#
+# To add another provider (e.g. GitLab), follow this pattern:
+#   detect_<provider>()      - detect if destination matches, warn/suppress
+#                              provider-specific flags for non-matching destinations
+#   create_<provider>_repo() - create the repo using that provider's CLI,
+#                              and set DESTINATION_URL
+# Then call both from main() in the provider detection and creation sections.
+# ==============================================================================
 
 detect_github() {
   IS_GITHUB=false
@@ -127,13 +149,6 @@ detect_github() {
 
   if [ "$VISIBILITY" = "--public" ] && [ "$CREATE_GITHUB_REPO" = false ]; then
     echo "Error: --create-public is only valid with --create-github-repo."
-    exit 1
-  fi
-}
-
-check_local_dir() {
-  if [ -d "$REPO_DIR" ]; then
-    echo "Error: local directory '$REPO_DIR' already exists. Remove it and retry."
     exit 1
   fi
 }
@@ -165,6 +180,17 @@ create_github_repo() {
     DESTINATION_URL=$(echo "$https_url" | sed -E 's|https://github.com/([^/]+/[^/]+)(\.git)?$|git@github.com:\1.git|')
   fi
   echo "    URL:        $DESTINATION_URL"
+}
+
+# ==============================================================================
+# Git operations
+# ==============================================================================
+
+check_local_dir() {
+  if [ -d "$REPO_DIR" ]; then
+    echo "Error: local directory '$REPO_DIR' already exists. Remove it and retry."
+    exit 1
+  fi
 }
 
 check_destination_empty() {
@@ -201,21 +227,33 @@ do_cleanup() {
   echo "    Removed $REPO_DIR"
 }
 
+# ==============================================================================
+# Main
+# ==============================================================================
+
 main() {
   parse_args "$@"
   validate_args
+
+  # Provider detection: identify destination host; suppress irrelevant flags
   detect_github
+
   REPO_DIR=$(basename "$SOURCE_URL" .git).git
   check_local_dir
+
+  # Provider repo creation, or verify the destination exists and is empty
   if [ "$CREATE_GITHUB_REPO" = true ]; then
     create_github_repo
   else
     check_destination_empty
   fi
+
   clone_and_push
+
   if [ "$CLEANUP" = true ]; then
     do_cleanup
   fi
+
   echo ""
   echo "Done."
 }
