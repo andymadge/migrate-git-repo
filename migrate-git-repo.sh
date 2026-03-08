@@ -9,19 +9,19 @@ usage() {
   local script_name
   script_name=$(basename "$0")
   cat << USAGE
-Usage: $script_name <source-clone-url> [destination-clone-url] [options]
+Usage: $script_name <from-url> [to-url] [options]
 
 Mirror a git repository from one host to another, preserving all branches,
 tags, and refs. Can be used to migrate between any git hosting providers
 such as Bitbucket, GitHub, GitLab, Gitea, etc.
 
 Arguments:
-  source-clone-url        SSH or HTTPS clone URL of the source repository
-  destination-clone-url   SSH or HTTPS clone URL of the destination repository.
-                          Optional when using --create-github-repo, in which
-                          case it is generated automatically using the same
-                          name as the source repository. To use a different
-                          name, provide a destination clone URL instead.
+  from-url   SSH or HTTPS clone URL of the source repository
+  to-url     SSH or HTTPS clone URL of the destination repository.
+             Optional when using --create-github-repo, in which
+             case it is generated automatically using the same
+             name as the source repository. To use a different
+             name, provide a destination clone URL instead.
 
 Options:
   --create-github-repo   Create the destination repository on GitHub using

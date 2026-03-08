@@ -13,15 +13,15 @@ Can be used to migrate between any git hosting providers — Bitbucket, GitHub, 
 ## Usage
 
 ```bash
-./migrate-git-repo.sh <source-clone-url> [destination-clone-url] [options]
+./migrate-git-repo.sh <from-url> [to-url] [options]
 ```
 
 ### Arguments
 
 | Argument                | Description                                                                                       |
 | ----------------------- | ------------------------------------------------------------------------------------------------- |
-| `source-clone-url`      | SSH or HTTPS clone URL of the source repository                                                   |
-| `destination-clone-url` | SSH or HTTPS clone URL of the destination repository. Optional when using `--create-github-repo`. |
+| `from-url` | SSH or HTTPS clone URL of the source repository                                                   |
+| `to-url`   | SSH or HTTPS clone URL of the destination repository. Optional when using `--create-github-repo`. |
 
 ### Options
 
