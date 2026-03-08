@@ -106,8 +106,9 @@ create_gh_stub() {
   done
 
   if [ "$installed" = false ]; then
-    # Make gh not found by removing any stub
-    rm -f "$STUBS_DIR/gh"
+    # Shadow real gh with a stub that fails, so the script's `gh --version` check fails
+    printf '#!/usr/bin/env bash\nexit 1\n' > "$STUBS_DIR/gh"
+    chmod +x "$STUBS_DIR/gh"
     return
   fi
 

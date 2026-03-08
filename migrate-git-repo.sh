@@ -133,7 +133,7 @@ section() {
 }
 
 if [ "$CREATE_GITHUB_REPO" = true ]; then
-  if ! command -v gh &> /dev/null; then
+  if ! gh --version &> /dev/null; then
     echo "Error: gh CLI is not installed."
     echo "Install it with: brew install gh"
     echo "Then authenticate with: gh auth login"
