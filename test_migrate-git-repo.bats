@@ -91,17 +91,19 @@ STUB
   chmod +x "$STUBS_DIR/git"
 }
 
-# create_gh_stub installed=true|false create_exit=N view_output="..."
+# create_gh_stub installed=true|false create_exit=N view_output="..." view_exit=N
 create_gh_stub() {
   local installed=true
   local create_exit=0
   local view_output="https://github.com/org/repo"
+  local view_exit=0
 
   for arg in "$@"; do
     case "$arg" in
       installed=*)   installed="${arg#*=}" ;;
       create_exit=*) create_exit="${arg#*=}" ;;
       view_output=*) view_output="${arg#*=}" ;;
+      view_exit=*)   view_exit="${arg#*=}" ;;
     esac
   done
 
@@ -119,7 +121,7 @@ if [ "\$1" = "repo" ] && [ "\$2" = "create" ]; then
 fi
 if [ "\$1" = "repo" ] && [ "\$2" = "view" ]; then
   echo "$view_output"
-  exit 0
+  exit $view_exit
 fi
 exit 0
 STUB
@@ -239,6 +241,31 @@ STUB
   [[ "$output" == *"failed to create GitHub repository"* ]]
 }
 
+@test "--create-github-repo: gh repo view failure exits non-zero" {
+  create_gh_stub installed=true view_exit=1
+  run "$SCRIPT" "$GITHUB_SOURCE_URL" --create-github-repo
+  [ "$status" -ne 0 ]
+}
+
+@test "--create-github-repo --create-public: passes --public to gh repo create" {
+  cat > "$STUBS_DIR/gh" << 'STUB'
+#!/usr/bin/env bash
+if [ "$1" = "repo" ] && [ "$2" = "create" ]; then
+  printf '%s\n' "$@" > "$BATS_TEST_TMPDIR/gh_create_args"
+  exit 0
+fi
+if [ "$1" = "repo" ] && [ "$2" = "view" ]; then
+  echo "https://github.com/org/repo"
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$STUBS_DIR/gh"
+  run "$SCRIPT" "$GITHUB_SOURCE_URL" --create-github-repo --create-public
+  [ "$status" -eq 0 ]
+  grep -q -- "--public" "$BATS_TEST_TMPDIR/gh_create_args"
+}
+
 @test "--create-github-repo: generates SSH destination URL by default" {
   create_gh_stub installed=true view_output="https://github.com/org/repo"
   run "$SCRIPT" "$GITHUB_SOURCE_URL" --create-github-repo
@@ -263,6 +290,22 @@ STUB
   run "$SCRIPT" "$GITHUB_SOURCE_URL" --create-github-repo --create-public
   [ "$status" -eq 0 ]
   [[ "$output" == *"public"* ]]
+}
+
+# ---------------------------------------------------------------------------
+# Git operation failures
+# ---------------------------------------------------------------------------
+
+@test "git clone failure: exits non-zero" {
+  create_git_stub clone_exit=1
+  run "$SCRIPT" "$SOURCE_URL" "$DEST_URL"
+  [ "$status" -ne 0 ]
+}
+
+@test "git push failure: exits non-zero" {
+  create_git_stub push_exit=1
+  run "$SCRIPT" "$SOURCE_URL" "$DEST_URL"
+  [ "$status" -ne 0 ]
 }
 
 # ---------------------------------------------------------------------------
