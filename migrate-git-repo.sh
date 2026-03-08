@@ -3,7 +3,8 @@ set -euo pipefail
 
 # migrate-git-repo.sh - Mirror a git repository from one host to another
 # Can be used to migrate between any git hosting providers e.g. Bitbucket, GitHub, GitLab, Gitea, etc.
-# Install gh CLI: brew install gh  (then run: gh auth login)
+#
+# For automated GitHub repo creation, install gh CLI: brew install gh (or see https://github.com/cli/cli#installation) then run gh auth login
 
 usage() {
   local script_name
@@ -42,7 +43,8 @@ Notes:
   - Unless --create-github-repo is used, the destination repository must
     already exist and must be empty.
   - This is a one-shot migration, not ongoing sync.
-  - Install gh CLI: brew install gh  (then run: gh auth login)
+  - For automated GitHub repo creation, install gh CLI: brew install gh 
+    (or see https://github.com/cli/cli#installation) then run gh auth login
 
 Examples:
   $script_name git@bitbucket.org:org/repo.git git@github.com:org/repo.git
@@ -135,7 +137,7 @@ section() {
 if [ "$CREATE_GITHUB_REPO" = true ]; then
   if ! gh --version &> /dev/null; then
     echo "Error: gh CLI is not installed."
-    echo "Install it with: brew install gh"
+    echo "Install it with: brew install gh  (or see https://github.com/cli/cli#installation)"
     echo "Then authenticate with: gh auth login"
     exit 1
   fi

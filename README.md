@@ -105,6 +105,8 @@ The source remote is named `source` and the destination remote `origin` in the l
 
 The `gh` CLI is only required when using `--create-github-repo`.
 
+See https://github.com/cli/cli#installation for full installation instructions.
+
 ```bash
 # Install
 brew install gh
