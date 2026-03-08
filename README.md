@@ -4,6 +4,14 @@ A bash script to mirror a git repository from one host to another, preserving al
 
 Can be used to migrate between any git hosting providers — Bitbucket, GitHub, GitLab, Gitea, etc.
 
+What it basically does is:
+1. Clone the source repository as a bare mirror (`git clone --mirror`)
+2. Add the destination as a new remote
+3. Push all refs to the destination (`git push --mirror`)
+4. Optionally remove the local clone
+
+If migrating to GitHub, it can also create the destination repository automatically using the `gh` CLI.
+
 ## Requirements
 
 - `git`
