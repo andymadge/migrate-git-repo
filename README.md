@@ -4,13 +4,15 @@ A bash script to mirror a git repository from one host to another, preserving al
 
 Can be used to migrate between any git hosting providers — Bitbucket, GitHub, GitLab, Gitea, etc.
 
-What it basically does is:
+The basic process is:
 1. Clone the source repository as a bare mirror (`git clone --mirror`)
 2. Add the destination as a new remote
 3. Push all refs to the destination (`git push --mirror`)
 4. Optionally remove the local clone
 
 If migrating to GitHub, it can also create the destination repository automatically using the `gh` CLI.
+
+NOTE: Only the git repo is migrated, not issues, PRs, wikis, etc.
 
 ## Requirements
 
@@ -35,7 +37,7 @@ If migrating to GitHub, it can also create the destination repository automatica
 
 | Option                 | Description                                                                                                                                       |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--create-github-repo` | Create the destination repository on GitHub using the `gh` CLI before pushing. Defaults to private. Ignored if destination is not a GitHub URL.   |
+| `--create-github-repo` | Create the destination repository on GitHub using the `gh` CLI before pushing. Repo name will be the same as the source. Defaults to private visibility. Ignored if destination is not a GitHub URL.   |
 | `--create-public`      | Make the created GitHub repository public. Only valid with `--create-github-repo`.                                                                |
 | `--dest-https`         | Use an HTTPS URL for the auto-generated destination. Only applies when `--create-github-repo` is used without a destination URL. Defaults to SSH. Use this if you are not configured for SSH push access. |
 | `--cleanup`            | Remove the local mirror clone after pushing. Default: off.                                                                                        |
