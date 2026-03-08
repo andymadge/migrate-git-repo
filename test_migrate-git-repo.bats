@@ -162,10 +162,10 @@ STUB
   [[ "$output" == *"--dest-https is only applicable"* ]]
 }
 
-@test "--dest-https with --create-github-repo but also a destination URL: exits 1" {
-  run "$SCRIPT" "$SOURCE_URL" "$DEST_URL" --create-github-repo --dest-https
+@test "destination URL with --create-github-repo: exits 1" {
+  run "$SCRIPT" "$SOURCE_URL" "$DEST_URL" --create-github-repo
   [ "$status" -eq 1 ]
-  [[ "$output" == *"--dest-https is only applicable"* ]]
+  [[ "$output" == *"do not provide a destination URL with --create-github-repo"* ]]
 }
 
 @test "options before arguments are accepted" {
@@ -209,17 +209,40 @@ STUB
 }
 
 # ---------------------------------------------------------------------------
-# GitHub destination detection
+# --repo-name flag
 # ---------------------------------------------------------------------------
 
-@test "non-GitHub destination with --create-github-repo: ignores flag and warns" {
-  run "$SCRIPT" "$SOURCE_URL" "git@gitlab.com:org/repo.git" --create-github-repo
-  [[ "$output" == *"ignoring --create-github-repo"* ]]
+@test "--repo-name without --create-github-repo: exits 1" {
+  run "$SCRIPT" "$SOURCE_URL" "$DEST_URL" --repo-name custom-name
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--repo-name is only valid with --create-github-repo"* ]]
 }
 
-@test "non-GitHub destination with --create-public: ignores flag and warns" {
-  run "$SCRIPT" "$SOURCE_URL" "git@gitlab.com:org/repo.git" --create-github-repo --create-public
-  [[ "$output" == *"ignoring --create-github-repo and --create-public"* ]]
+@test "--repo-name passes custom name to gh repo create" {
+  cat > "$STUBS_DIR/gh" << 'STUB'
+#!/usr/bin/env bash
+if [ "$1" = "repo" ] && [ "$2" = "create" ]; then
+  printf '%s\n' "$@" > "$BATS_TEST_TMPDIR/gh_create_args"
+  exit 0
+fi
+if [ "$1" = "repo" ] && [ "$2" = "view" ]; then
+  echo "https://github.com/org/custom-name"
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$STUBS_DIR/gh"
+  run "$SCRIPT" "$GITHUB_SOURCE_URL" --create-github-repo --repo-name custom-name
+  [ "$status" -eq 0 ]
+  grep -q "custom-name" "$BATS_TEST_TMPDIR/gh_create_args"
+}
+
+@test "--repo-name with --dest-https: exits 0 and uses custom name" {
+  create_gh_stub installed=true view_output="https://github.com/org/custom-name"
+  run "$SCRIPT" "$GITHUB_SOURCE_URL" --create-github-repo --repo-name custom-name --dest-https
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"custom-name"* ]]
+  [[ "$output" == *"https://github.com/org/custom-name"* ]]
 }
 
 # ---------------------------------------------------------------------------

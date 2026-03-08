@@ -23,24 +23,23 @@ such as Bitbucket, GitHub, GitLab, Gitea, etc.
 Arguments:
   from-url   SSH or HTTPS clone URL of the source repository
   to-url     SSH or HTTPS clone URL of the destination repository.
-             Optional when using --create-github-repo, in which
-             case it is generated automatically using the same
-             name as the source repository. To use a different
-             name, provide a destination clone URL instead.
+             Cannot be combined with --create-github-repo. Omit
+             when using --create-github-repo.
 
 Options:
   --create-github-repo   Create the destination repository on GitHub using
                          the gh CLI before pushing. Defaults to private.
                          Requires gh to be installed and authenticated.
                          See: https://cli.github.com
-                         Ignored if destination is not a GitHub URL.
+  --repo-name <name>     Override the GitHub repository name when using
+                         --create-github-repo. Defaults to the source
+                         repository name. Only valid with --create-github-repo.
   --create-public        Make the created GitHub repository public.
                          Only valid with --create-github-repo.
-                         Ignored if destination is not a GitHub URL.
   --dest-https           Use HTTPS for the auto-generated destination URL.
-                         Only applies when --create-github-repo is used
-                         without a destination URL. Defaults to SSH. Use
-                         this if you are not configured for SSH push access.
+                         Only applies when --create-github-repo is used.
+                         Defaults to SSH. Use this if you are not configured
+                         for SSH push access.
   --cleanup              Remove the local mirror clone after pushing.
                          Default: off.
 
@@ -54,6 +53,7 @@ Notes:
 Examples:
   $script_name git@bitbucket.org:org/repo.git git@github.com:org/repo.git
   $script_name git@bitbucket.org:org/repo.git --create-github-repo
+  $script_name git@bitbucket.org:org/repo.git --create-github-repo --repo-name my-repo
   $script_name git@bitbucket.org:org/repo.git --create-github-repo --dest-https
   $script_name git@bitbucket.org:org/repo.git --create-github-repo --create-public
   $script_name git@github.com:org/repo.git git@gitlab.com:org/repo.git --cleanup
@@ -79,19 +79,30 @@ parse_args() {
   CLEANUP=false
   # GitHub-specific flags
   CREATE_GITHUB_REPO=false
+  REPO_NAME=""
   VISIBILITY="--private"
   USE_HTTPS=false
 
-  for arg in "$@"; do
-    case "$arg" in
+  while [ $# -gt 0 ]; do
+    case "$1" in
       --cleanup)            CLEANUP=true ;;
       # GitHub-specific flags
       --create-github-repo) CREATE_GITHUB_REPO=true ;;
+      --repo-name)
+        if [ $# -lt 2 ] || [[ "$2" == --* ]]; then
+          echo "Error: --repo-name requires a value."
+          usage
+        fi
+        REPO_NAME="$2"
+        shift
+        ;;
+      --repo-name=*)        REPO_NAME="${1#--repo-name=}" ;;
       --create-public)      VISIBILITY="--public" ;;
       --dest-https)         USE_HTTPS=true ;;
-      --*) echo "Unknown option: $arg"; usage ;;
-      *)   POSITIONAL+=("$arg") ;;
+      --*) echo "Unknown option: $1"; usage ;;
+      *)   POSITIONAL+=("$1") ;;
     esac
+    shift
   done
 
   SOURCE_URL="${POSITIONAL[0]:-}"
@@ -109,14 +120,24 @@ validate_args() {
     exit 1
   fi
 
-  # GitHub-specific flag validation
-  if [ "$USE_HTTPS" = true ] && [ "$CREATE_GITHUB_REPO" = false ]; then
-    echo "Error: --dest-https is only applicable when --create-github-repo is used without a destination URL."
+  if [ -n "$DESTINATION_URL" ] && [ "$CREATE_GITHUB_REPO" = true ]; then
+    echo "Error: do not provide a destination URL with --create-github-repo; use --repo-name to customise the repository name."
     exit 1
   fi
 
-  if [ "$USE_HTTPS" = true ] && [ -n "$DESTINATION_URL" ]; then
-    echo "Error: --dest-https is only applicable when --create-github-repo is used without a destination URL."
+  # GitHub-specific flag validation
+  if [ -n "$REPO_NAME" ] && [ "$CREATE_GITHUB_REPO" = false ]; then
+    echo "Error: --repo-name is only valid with --create-github-repo."
+    exit 1
+  fi
+
+  if [ "$VISIBILITY" = "--public" ] && [ "$CREATE_GITHUB_REPO" = false ]; then
+    echo "Error: --create-public is only valid with --create-github-repo."
+    exit 1
+  fi
+
+  if [ "$USE_HTTPS" = true ] && [ "$CREATE_GITHUB_REPO" = false ]; then
+    echo "Error: --dest-https is only applicable when --create-github-repo is used."
     exit 1
   fi
 }
@@ -125,34 +146,10 @@ validate_args() {
 # Provider: GitHub (gh CLI)
 #
 # To add another provider (e.g. GitLab), follow this pattern:
-#   detect_<provider>()      - detect if destination matches, warn/suppress
-#                              provider-specific flags for non-matching destinations
 #   create_<provider>_repo() - create the repo using that provider's CLI,
 #                              and set DESTINATION_URL
-# Then call both from main() in the provider detection and creation sections.
+# Then call it from main() in the provider repo creation section.
 # ==============================================================================
-
-detect_github() {
-  IS_GITHUB=false
-  if [ -n "$DESTINATION_URL" ] && echo "$DESTINATION_URL" | grep -qi "github.com"; then
-    IS_GITHUB=true
-  elif [ "$CREATE_GITHUB_REPO" = true ] && [ -z "$DESTINATION_URL" ]; then
-    IS_GITHUB=true
-  fi
-
-  if [ "$IS_GITHUB" = false ]; then
-    if [ "$CREATE_GITHUB_REPO" = true ] || [ "$VISIBILITY" = "--public" ]; then
-      echo "Note: destination is not a GitHub URL - ignoring --create-github-repo and --create-public."
-    fi
-    CREATE_GITHUB_REPO=false
-    VISIBILITY="--private"
-  fi
-
-  if [ "$VISIBILITY" = "--public" ] && [ "$CREATE_GITHUB_REPO" = false ]; then
-    echo "Error: --create-public is only valid with --create-github-repo."
-    exit 1
-  fi
-}
 
 create_github_repo() {
   if ! gh --version &> /dev/null; then
@@ -161,18 +158,22 @@ create_github_repo() {
     echo "Then authenticate with: gh auth login"
     exit 1
   fi
-  local source_repo_name
-  source_repo_name=$(basename "$SOURCE_URL" .git)
+  local repo_name
+  if [ -n "$REPO_NAME" ]; then
+    repo_name="$REPO_NAME"
+  else
+    repo_name=$(basename "$SOURCE_URL" .git)
+  fi
   section "Creating GitHub repository"
-  echo "    Name:       $source_repo_name"
+  echo "    Name:       $repo_name"
   echo "    Visibility: ${VISIBILITY#--}"
-  echo "    Running:    gh repo create \"$source_repo_name\" \"$VISIBILITY\""
-  if ! gh repo create "$source_repo_name" "$VISIBILITY"; then
-    echo "Error: failed to create GitHub repository '$source_repo_name'. Aborting."
+  echo "    Running:    gh repo create \"$repo_name\" \"$VISIBILITY\""
+  if ! gh repo create "$repo_name" "$VISIBILITY"; then
+    echo "Error: failed to create GitHub repository '$repo_name'. Aborting."
     exit 1
   fi
   local https_url
-  https_url=$(gh repo view "$source_repo_name" --json url --jq .url)
+  https_url=$(gh repo view "$repo_name" --json url --jq .url)
   if [ "$USE_HTTPS" = true ]; then
     DESTINATION_URL="$https_url"
   else
@@ -235,9 +236,6 @@ do_cleanup() {
 main() {
   parse_args "$@"
   validate_args
-
-  # Provider detection: identify destination host; suppress irrelevant flags
-  detect_github
 
   REPO_DIR=$(basename "$SOURCE_URL" .git).git
   check_local_dir
