@@ -37,7 +37,7 @@ If migrating to GitHub, it can also create the destination repository automatica
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--create-github-repo` | Create the destination repository on GitHub using the `gh` CLI before pushing. Defaults to private. Ignored if destination is not a GitHub URL.   |
 | `--create-public`      | Make the created GitHub repository public. Only valid with `--create-github-repo`.                                                                |
-| `--https`              | Use an HTTPS URL for the auto-generated destination. Only applies when `--create-github-repo` is used without a destination URL. Defaults to SSH. |
+| `--dest-https`         | Use an HTTPS URL for the auto-generated destination. Only applies when `--create-github-repo` is used without a destination URL. Defaults to SSH. Use this if you are not configured for SSH push access. |
 | `--cleanup`            | Remove the local mirror clone after pushing. Default: off.                                                                                        |
 
 Options can appear anywhere in the command — before, after, or interspersed with arguments.
@@ -77,7 +77,7 @@ Creates a private GitHub repository with the same name as the source, then pushe
 ```bash
 ./migrate-git-repo.sh \
   git@bitbucket.org:org/repo.git \
-  --create-github-repo --https
+  --create-github-repo --dest-https
 ```
 
 ### Migrate to a different repo name on GitHub

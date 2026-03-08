@@ -37,9 +37,10 @@ Options:
   --create-public        Make the created GitHub repository public.
                          Only valid with --create-github-repo.
                          Ignored if destination is not a GitHub URL.
-  --https                Use HTTPS for the auto-generated destination URL.
+  --dest-https           Use HTTPS for the auto-generated destination URL.
                          Only applies when --create-github-repo is used
-                         without a destination URL. Defaults to SSH.
+                         without a destination URL. Defaults to SSH. Use
+                         this if you are not configured for SSH push access.
   --cleanup              Remove the local mirror clone after pushing.
                          Default: off.
 
@@ -53,7 +54,7 @@ Notes:
 Examples:
   $script_name git@bitbucket.org:org/repo.git git@github.com:org/repo.git
   $script_name git@bitbucket.org:org/repo.git --create-github-repo
-  $script_name git@bitbucket.org:org/repo.git --create-github-repo --https
+  $script_name git@bitbucket.org:org/repo.git --create-github-repo --dest-https
   $script_name git@bitbucket.org:org/repo.git --create-github-repo --create-public
   $script_name git@github.com:org/repo.git git@gitlab.com:org/repo.git --cleanup
 USAGE
@@ -87,7 +88,7 @@ parse_args() {
       # GitHub-specific flags
       --create-github-repo) CREATE_GITHUB_REPO=true ;;
       --create-public)      VISIBILITY="--public" ;;
-      --https)              USE_HTTPS=true ;;
+      --dest-https)         USE_HTTPS=true ;;
       --*) echo "Unknown option: $arg"; usage ;;
       *)   POSITIONAL+=("$arg") ;;
     esac
@@ -110,12 +111,12 @@ validate_args() {
 
   # GitHub-specific flag validation
   if [ "$USE_HTTPS" = true ] && [ "$CREATE_GITHUB_REPO" = false ]; then
-    echo "Error: --https is only applicable when --create-github-repo is used without a destination URL."
+    echo "Error: --dest-https is only applicable when --create-github-repo is used without a destination URL."
     exit 1
   fi
 
   if [ "$USE_HTTPS" = true ] && [ -n "$DESTINATION_URL" ]; then
-    echo "Error: --https is only applicable when --create-github-repo is used without a destination URL."
+    echo "Error: --dest-https is only applicable when --create-github-repo is used without a destination URL."
     exit 1
   fi
 }

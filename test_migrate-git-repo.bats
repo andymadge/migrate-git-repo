@@ -154,16 +154,16 @@ STUB
   [[ "$output" == *"--create-public is only valid with --create-github-repo"* ]]
 }
 
-@test "--https without --create-github-repo: exits 1" {
-  run "$SCRIPT" "$SOURCE_URL" "$DEST_URL" --https
+@test "--dest-https without --create-github-repo: exits 1" {
+  run "$SCRIPT" "$SOURCE_URL" "$DEST_URL" --dest-https
   [ "$status" -eq 1 ]
-  [[ "$output" == *"--https is only applicable"* ]]
+  [[ "$output" == *"--dest-https is only applicable"* ]]
 }
 
-@test "--https with --create-github-repo but also a destination URL: exits 1" {
-  run "$SCRIPT" "$SOURCE_URL" "$DEST_URL" --create-github-repo --https
+@test "--dest-https with --create-github-repo but also a destination URL: exits 1" {
+  run "$SCRIPT" "$SOURCE_URL" "$DEST_URL" --create-github-repo --dest-https
   [ "$status" -eq 1 ]
-  [[ "$output" == *"--https is only applicable"* ]]
+  [[ "$output" == *"--dest-https is only applicable"* ]]
 }
 
 @test "options before arguments are accepted" {
@@ -246,9 +246,9 @@ STUB
   [[ "$output" == *"git@github.com:org/repo.git"* ]]
 }
 
-@test "--create-github-repo --https: uses HTTPS destination URL" {
+@test "--create-github-repo --dest-https: uses HTTPS destination URL" {
   create_gh_stub installed=true view_output="https://github.com/org/repo"
-  run "$SCRIPT" "$GITHUB_SOURCE_URL" --create-github-repo --https
+  run "$SCRIPT" "$GITHUB_SOURCE_URL" --create-github-repo --dest-https
   [ "$status" -eq 0 ]
   [[ "$output" == *"https://github.com/org/repo"* ]]
 }
