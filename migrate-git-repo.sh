@@ -40,8 +40,8 @@ Options:
                          Only applies when --create-github-repo is used.
                          Defaults to SSH. Use this if you are not configured
                          for SSH push access.
-  --cleanup              Remove the local mirror clone after pushing.
-                         Default: off.
+  --no-cleanup           Keep the local mirror clone after pushing.
+                         Default: remove it after pushing.
 
 Notes:
   - Unless --create-github-repo is used, the destination repository must
@@ -56,7 +56,7 @@ Examples:
   $script_name git@bitbucket.org:org/repo.git --create-github-repo --repo-name my-repo
   $script_name git@bitbucket.org:org/repo.git --create-github-repo --dest-https
   $script_name git@bitbucket.org:org/repo.git --create-github-repo --create-public
-  $script_name git@github.com:org/repo.git git@gitlab.com:org/repo.git --cleanup
+  $script_name git@github.com:org/repo.git git@gitlab.com:org/repo.git --no-cleanup
 USAGE
   exit 1
 }
@@ -76,7 +76,7 @@ parse_args() {
   fi
 
   POSITIONAL=()
-  CLEANUP=false
+  CLEANUP=true
   # GitHub-specific flags
   CREATE_GITHUB_REPO=false
   REPO_NAME=""
@@ -85,7 +85,7 @@ parse_args() {
 
   while [ $# -gt 0 ]; do
     case "$1" in
-      --cleanup)            CLEANUP=true ;;
+      --no-cleanup)         CLEANUP=false ;;
       # GitHub-specific flags
       --create-github-repo) CREATE_GITHUB_REPO=true ;;
       --repo-name)

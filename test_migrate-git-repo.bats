@@ -169,12 +169,12 @@ STUB
 }
 
 @test "options before arguments are accepted" {
-  run "$SCRIPT" --cleanup "$SOURCE_URL" "$DEST_URL"
+  run "$SCRIPT" --no-cleanup "$SOURCE_URL" "$DEST_URL"
   [ "$status" -eq 0 ]
 }
 
 @test "options interspersed with arguments are accepted" {
-  run "$SCRIPT" "$SOURCE_URL" --cleanup "$DEST_URL"
+  run "$SCRIPT" "$SOURCE_URL" --no-cleanup "$DEST_URL"
   [ "$status" -eq 0 ]
 }
 
@@ -369,9 +369,15 @@ STUB
   [ "$status" -eq 0 ]
 }
 
-@test "--cleanup: removes local mirror directory after push" {
-  run "$SCRIPT" "$SOURCE_URL" "$DEST_URL" --cleanup
+@test "default: removes local mirror directory after push" {
+  run "$SCRIPT" "$SOURCE_URL" "$DEST_URL"
   [ "$status" -eq 0 ]
   [[ "$output" == *"Removed repo.git"* ]]
   [ ! -d "repo.git" ]
+}
+
+@test "--no-cleanup: keeps local mirror directory after push" {
+  run "$SCRIPT" "$SOURCE_URL" "$DEST_URL" --no-cleanup
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"Removed"* ]]
 }

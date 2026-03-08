@@ -8,7 +8,7 @@ The basic process is:
 1. Clone the source repository as a bare mirror (`git clone --mirror`)
 2. Add the destination as a new remote
 3. Push all refs to the destination (`git push --mirror`)
-4. Optionally remove the local clone
+4. Remove the local clone (use `--no-cleanup` to keep it)
 
 If migrating to GitHub, it can also create the destination repository automatically using the `gh` CLI.
 
@@ -41,7 +41,7 @@ NOTE: Only the git repo is migrated, not issues, PRs, wikis, etc.
 | `--repo-name <name>`   | Override the GitHub repository name when using `--create-github-repo`. Defaults to the source repository name. Only valid with `--create-github-repo`. |
 | `--create-public`      | Make the created GitHub repository public. Only valid with `--create-github-repo`.                                                                |
 | `--dest-https`         | Use an HTTPS URL for the auto-generated destination. Only applies when `--create-github-repo` is used. Defaults to SSH. Use this if you are not configured for SSH push access. |
-| `--cleanup`            | Remove the local mirror clone after pushing. Default: off.                                                                                        |
+| `--no-cleanup`         | Keep the local mirror clone after pushing. Default: remove it after pushing.                                                                      |
 
 Options can appear anywhere in the command — before, after, or interspersed with arguments.
 
@@ -91,13 +91,13 @@ Creates a private GitHub repository with the same name as the source, then pushe
   --create-github-repo --repo-name new-name
 ```
 
-### Clean up local mirror after pushing
+### Keep the local mirror after pushing
 
 ```bash
 ./migrate-git-repo.sh \
   git@bitbucket.org:org/repo.git \
   git@github.com:org/repo.git \
-  --cleanup
+  --no-cleanup
 ```
 
 ## How it works
@@ -106,7 +106,7 @@ Creates a private GitHub repository with the same name as the source, then pushe
 2. Checks the destination repository is empty (or creates it on GitHub)
 3. Clones the source as a bare mirror (`git clone --mirror`)
 4. Pushes all refs to the destination (`git push --mirror`)
-5. Optionally removes the local mirror clone
+5. Removes the local mirror clone (unless `--no-cleanup` is passed)
 
 The source remote is named `source` and the destination remote `origin` in the local mirror.
 
@@ -166,4 +166,4 @@ The following areas are covered:
 - Private vs public visibility
 - `git clone` and `git push` failures
 - `--mirror` flag passed to `git push`
-- `--cleanup` removing the local mirror directory
+- Default cleanup and `--no-cleanup` keeping the local mirror directory
